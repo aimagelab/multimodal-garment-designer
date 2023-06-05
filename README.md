@@ -121,7 +121,14 @@ val_pipe = ValPipe(
 For an extensive usage case see the file ```eval.py``` in the main repo.
 
 ## Datasets
-You can download the Dress Code Multimodal and Viton-HD Multimodal additional data annotations from here.
+We do not hold rights on the original Dress Code and Viton-HD datasets. Please refer to the original papers for more information.
+
+Start by downloading the original datasets from the following links:
+- Viton-HD **[[link](https://github.com/shadow2496/VITON-HD)]**
+- Dress Code **[[link](https://github.com/aimagelab/dress-code)]**
+
+
+Download the Dress Code Multimodal and Viton-HD Multimodal additional data annotations from here.
 
 - Dress Code Multimodal **[[link](https://drive.google.com/file/d/1GABxne7cEHyFgmVoffgssfYKvy91KLos/view?usp=share_link)]**
 - Viton-HD Multimodal **[[link](https://drive.google.com/file/d/1Z2b9YkyBPA_9ZDC54Y5muW9Q8yfAqWSH/view?usp=share_link)]**
