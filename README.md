@@ -47,8 +47,8 @@ python eval.py --dataset_path <path> --batch_size <int> --mixed_precision fp16 -
 - ```dataset``` dataset name to be used
 - ```output_dir``` path to the output directory
 - ```save_name``` name of the output dir subfolder where the generated images are saved
-- ```start_cond_rate``` rate {0.0,1.0} of denoising steps in which sketch cond is applied
-- ```sketch_cond_rate``` rate {0.0,1.0} of denoising steps that will be used as offset to start sketch conditioning
+- ```start_cond_rate``` rate {0.0,1.0} of denoising steps that will be used as offset to start sketch conditioning
+- ```sketch_cond_rate``` rate {0.0,1.0} of denoising steps in which sketch cond is applied
 - ```test_order``` test setting (paired | unpaired)
 
 Note that we provide few sample images to test MGD simply cloning this repo (*i.e.*, assets/data). To execute the code set 
