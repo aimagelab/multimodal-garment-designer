@@ -160,7 +160,7 @@ Once data is downloaded prepare the dataset folder as follow:
 <pre>
 Viton-HD
 | <b>captions.json</b>
-|---- Train
+|---- train
 |-------- image
 |-------- cloth
 |-------- image-parse-v3
@@ -168,7 +168,7 @@ Viton-HD
 |-------- <b>im_sketch</b>
 |-------- <b>im_sketch_unpaired</b>
 ...
-|---- Test
+|---- test
 ...
 |-------- <b>im_sketch</b>
 |-------- <b>im_sketch_unpaired</b>
