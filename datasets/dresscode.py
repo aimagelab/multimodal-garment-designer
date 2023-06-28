@@ -1,6 +1,7 @@
 import os
 import random
 from typing import List, Tuple
+import pathlib
 
 import json
 import numpy as np
@@ -51,7 +52,7 @@ class Dataset(data.Dataset):
         :type size: tuple(int)
         """
         super(Dataset, self).__init__()
-        self.dataroot = dataroot_path
+        self.dataroot = pathlib.Path(dataroot_path)
         self.phase = phase
         self.caption_folder = caption_folder
         self.sketch_threshold_range = sketch_threshold_range
@@ -88,11 +89,11 @@ class Dataset(data.Dataset):
         assert all(x in possible_outputs for x in outputlist)
 
         # Load Captions
-        with open(os.path.join(self.dataroot, self.caption_folder)) as f:
+        with open(self.dataroot / self.caption_folder) as f:
             self.captions_dict = json.load(f)
         self.captions_dict = {k: v for k, v in self.captions_dict.items() if len(v) >= 3}
         if use_coarse_captions:
-            with open(os.path.join(self.dataroot, coarse_caption_folder)) as f:
+            with open(self.dataroot / coarse_caption_folder) as f:
                 self.captions_dict.update(json.load(f))
 
         annotated_elements = [k for k, _ in self.captions_dict.items()]
@@ -100,11 +101,11 @@ class Dataset(data.Dataset):
         for c in category:
             assert c in ['dresses', 'upper_body', 'lower_body']
 
-            dataroot = os.path.join(self.dataroot, c)
+            dataroot = self.dataroot / c
             if phase == 'train':
-                filename = os.path.join(dataroot, f"{phase}_pairs.txt")
+                filename = dataroot / f"{phase}_pairs.txt"
             else:
-                filename = os.path.join(dataroot, f"{phase}_pairs_{order}.txt")
+                filename = dataroot / f"{phase}_pairs_{order}.txt"
 
             with open(filename, 'r') as f:
                 for line in f.readlines():
@@ -133,7 +134,7 @@ class Dataset(data.Dataset):
             assert self.phase == 'train' and self.order == 'paired'
             current_category = random.choice(self.category)
             chosen_droot = random.choice(
-                [droot for droot in self.dataroot_names if droot.split('/')[-1] == current_category])
+                [droot for droot in self.dataroot_names if str(droot.name) == current_category])
             index = self.dataroot_names.index(chosen_droot)
 
         c_name = self.c_names[index]
@@ -167,7 +168,7 @@ class Dataset(data.Dataset):
             captions_uncond = uncond_input
 
         if "image" in self.outputlist or "im_head" in self.outputlist or "im_cloth" in self.outputlist:
-            image = Image.open(os.path.join(dataroot, 'images', im_name))
+            image = Image.open(dataroot / 'images' / im_name)
 
             image = image.resize((self.width, self.height))
             image = self.transform(image)  # [-1,1]
@@ -175,10 +176,9 @@ class Dataset(data.Dataset):
         if "im_sketch" in self.outputlist:
 
             if "unpaired" == self.order and self.phase == 'test':  # Upper of multigarment is the same of unpaired
-                im_sketch = Image.open(os.path.join(dataroot, 'im_sketch_unpaired',
-                                                    f'{im_name.replace(".jpg", "")}_{c_name.replace(".jpg", ".png")}'))
+                im_sketch = Image.open(dataroot / 'im_sketch_unpaired' / f'{im_name.replace(".jpg", "")}_{c_name.replace(".jpg", ".png")}')
             else:
-                im_sketch = Image.open(os.path.join(dataroot, 'im_sketch', c_name.replace(".jpg", ".png")))
+                im_sketch = Image.open(dataroot / 'im_sketch' / c_name.replace(".jpg", ".png"))
 
             im_sketch = im_sketch.resize((self.width, self.height))
             im_sketch = ImageOps.invert(im_sketch)
@@ -191,7 +191,7 @@ class Dataset(data.Dataset):
         if "im_pose" in self.outputlist or "parser_mask" in self.outputlist or "im_mask" in self.outputlist or "parse_mask_total" in self.outputlist or "parse_array" in self.outputlist or "pose_map" in self.outputlist or "parse_array" in self.outputlist or "shape" in self.outputlist or "im_head" in self.outputlist:
             # Label Map
             parse_name = im_name.replace('_0.jpg', '_4.png')
-            im_parse = Image.open(os.path.join(dataroot, 'label_maps', parse_name))
+            im_parse = Image.open(dataroot / 'label_maps' / parse_name)
             im_parse = im_parse.resize((self.width, self.height), Image.NEAREST)
             parse_array = np.array(im_parse)
 
@@ -214,8 +214,8 @@ class Dataset(data.Dataset):
 
             arms = (parse_array == 14).astype(np.float32) + (parse_array == 15).astype(np.float32)
 
-            category = dataroot.split('/')[-1]
-            if dataroot.split('/')[-1] == 'dresses':
+            category = str(dataroot.name)
+            if category == 'dresses':
                 label_cat = 7
                 parse_cloth = (parse_array == 7).astype(np.float32)
                 parse_mask = (parse_array == 7).astype(np.float32) + \
@@ -223,7 +223,7 @@ class Dataset(data.Dataset):
                              (parse_array == 13).astype(np.float32)
                 parser_mask_changeable += np.logical_and(parse_array, np.logical_not(parser_mask_fixed))
 
-            elif dataroot.split('/')[-1] == 'upper_body':
+            elif category == 'upper_body':
                 label_cat = 4
                 parse_cloth = (parse_array == 4).astype(np.float32)
                 parse_mask = (parse_array == 4).astype(np.float32)
@@ -232,7 +232,7 @@ class Dataset(data.Dataset):
                                      (parse_array == label_map["pants"]).astype(np.float32)
 
                 parser_mask_changeable += np.logical_and(parse_array, np.logical_not(parser_mask_fixed))
-            elif dataroot.split('/')[-1] == 'lower_body':
+            elif category == 'lower_body':
                 label_cat = 6
                 parse_cloth = (parse_array == 6).astype(np.float32)
                 parse_mask = (parse_array == 6).astype(np.float32) + \
@@ -270,7 +270,7 @@ class Dataset(data.Dataset):
 
             # Load pose points
             pose_name = im_name.replace('_0.jpg', '_2.json')
-            with open(os.path.join(dataroot, 'keypoints', pose_name), 'r') as f:
+            with open(dataroot / 'keypoints' / pose_name, 'r') as f:
                 pose_label = json.load(f)
                 pose_data = pose_label['keypoints']
                 pose_data = np.array(pose_data)
@@ -315,9 +315,8 @@ class Dataset(data.Dataset):
 
             im_arms = Image.new('L', (self.width, self.height))
             arms_draw = ImageDraw.Draw(im_arms)
-            if dataroot.split('/')[-1] == 'dresses' or dataroot.split('/')[-1] == 'upper_body' or dataroot.split('/')[
-                -1] == 'lower_body':
-                with open(os.path.join(dataroot, 'keypoints', pose_name), 'r') as f:
+            if category == 'dresses' or category == 'upper_body' or category == 'lower_body':
+                with open(dataroot / 'keypoints' / pose_name, 'r') as f:
                     data = json.load(f)
                     shoulder_right = np.multiply(tuple(data['keypoints'][2][:2]), self.height / 512.0)
                     shoulder_left = np.multiply(tuple(data['keypoints'][5][:2]), self.height / 512.0)
@@ -350,14 +349,14 @@ class Dataset(data.Dataset):
 
                 hands = np.logical_and(np.logical_not(im_arms), arms)
 
-                if dataroot.split('/')[-1] == 'dresses' or dataroot.split('/')[-1] == 'upper_body':
+                if category == 'dresses' or category == 'upper_body':
                     parse_mask += im_arms
                     parser_mask_fixed += hands
 
             # delete neck
             parse_head_2 = torch.clone(parse_head)
-            if dataroot.split('/')[-1] == 'dresses' or dataroot.split('/')[-1] == 'upper_body':
-                with open(os.path.join(dataroot, 'keypoints', pose_name), 'r') as f:
+            if category == 'dresses' or category == 'upper_body':
+                with open(dataroot / 'keypoints' / pose_name, 'r') as f:
                     data = json.load(f)
                     points = []
                     points.append(np.multiply(tuple(data['keypoints'][2][:2]), self.height / 512.0))
@@ -407,7 +406,7 @@ class Dataset(data.Dataset):
             im_sketch = torch.zeros_like(im_sketch)
 
         if "stitch_label" in self.outputlist:
-            stitch_labelmap = Image.open(os.path.join(self.dataroot, 'test_stitchmap', im_name.replace(".jpg", ".png")))
+            stitch_labelmap = Image.open(self.dataroot / 'test_stitchmap' / im_name.replace(".jpg", ".png"))
             stitch_labelmap = transforms.ToTensor()(stitch_labelmap) * 255
             stitch_label = stitch_labelmap == 13
         
