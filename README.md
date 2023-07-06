@@ -130,7 +130,7 @@ Start by downloading the original datasets from the following links:
 
 Download the Dress Code Multimodal and Viton-HD Multimodal additional data annotations from here.
 
-- Dress Code Multimodal **[[link](https://drive.google.com/file/d/1GABxne7cEHyFgmVoffgssfYKvy91KLos/view?usp=share_link)]**
+- Dress Code Multimodal **[[link](https://drive.google.com/file/d/1y0lHA-4ogjjo9g7VuvcQJrD_CtgjAKhv/view?usp=drive_link)]**
 - Viton-HD Multimodal **[[link](https://drive.google.com/file/d/1Z2b9YkyBPA_9ZDC54Y5muW9Q8yfAqWSH/view?usp=share_link)]**
 
 ### Dress Code Multimodal Data Preparation
