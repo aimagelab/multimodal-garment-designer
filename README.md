@@ -1,4 +1,4 @@
-# Multimodal Garment Designer
+# Multimodal Garment Designer (ICCV 2023)
 ### Human-Centric Latent Diffusion Models for Fashion Image Editing
 [**Alberto Baldrati**](https://scholar.google.com/citations?hl=en&user=I1jaZecAAAAJ)**\***,
 [**Davide Morelli**](https://scholar.google.com/citations?user=UJ4D3rYAAAAJ&hl=en)**\***,
@@ -27,10 +27,10 @@ This is the **official repository** for the [**paper**](https://arxiv.org/abs/23
 If you make use of our work, please cite our paper:
 
 ```bibtex
-@article{baldrati2023multimodal,
+@inproceedings{baldrati2023multimodal,
   title={Multimodal Garment Designer: Human-Centric Latent Diffusion Models for Fashion Image Editing},
   author={Baldrati, Alberto and Morelli, Davide and Cartella, Giuseppe and Cornia, Marcella and Bertini, Marco and Cucchiara, Rita},
-  journal={arXiv preprint arXiv:2304.02051},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
   year={2023}
 }
 ```
