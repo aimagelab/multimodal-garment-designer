@@ -1,0 +1,56 @@
+name: mgd
+channels:
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=5.1=1_gnu
+  - ca-certificates=2023.08.22=h06a4308_0
+  - ld_impl_linux-64=2.38=h1181459_1
+  - libffi=3.4.4=h6a678d5_0
+  - libgcc-ng=11.2.0=h1234567_1
+  - libgomp=11.2.0=h1234567_1
+  - libstdcxx-ng=11.2.0=h1234567_1
+  - ncurses=6.4=h6a678d5_0
+  - openssl=3.0.11=h7f8727e_2
+  - pip=23.2.1=py39h06a4308_0
+  - python=3.9.18=h955ad1f_0
+  - readline=8.2=h5eee18b_0
+  - setuptools=68.0.0=py39h06a4308_0
+  - sqlite=3.41.2=h5eee18b_0
+  - tk=8.6.12=h1ccaba5_0
+  - tzdata=2023c=h04d1e81_0
+  - wheel=0.38.4=py39h06a4308_0
+  - xz=5.4.2=h5eee18b_0
+  - zlib=1.2.13=h5eee18b_0
+  - pip:
+      - accelerate==0.15.0
+      - certifi==2023.7.22
+      - charset-normalizer==3.2.0
+      - clean-fid==0.1.35
+      - diffusers==0.12.0
+      - filelock==3.12.4
+      - fsspec==2023.9.1
+      - huggingface-hub==0.17.2
+      - idna==3.4
+      - importlib-metadata==6.8.0
+      - lpips==0.1.4
+      - numpy==1.26.0
+      - opencv-python==4.7.0.68
+      - packaging==23.1
+      - pillow==10.0.1
+      - psutil==5.9.5
+      - pyyaml==6.0.1
+      - regex==2023.8.8
+      - requests==2.31.0
+      - scipy==1.11.2
+      - tokenizers==0.13.3
+      - torch==1.12.1
+      - torch-fidelity==0.3.0
+      - torchmetrics==0.11.0
+      - torchvision==0.13.1
+      - tqdm==4.66.1
+      - transformers==4.25.1
+      - typing-extensions==4.8.0
+      - urllib3==2.0.5
+      - zipp==3.17.0
+prefix: /home/abaldrati/miniconda3/envs/mgd
