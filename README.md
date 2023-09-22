@@ -35,12 +35,42 @@ If you make use of our work, please cite our paper:
 }
 ```
 
+## Getting Started
+
+We recommend using the [**Anaconda**](https://www.anaconda.com/) package manager to avoid dependency/reproducibility
+problems.
+For Linux systems, you can find a conda installation
+guide [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html).
+
+### Installation
+
+1. Clone the repository
+
+```sh
+git clone https://github.com/aimagelab/multimodal-garment-designer
+```
+
+2. Install Python dependencies
+
+```sh
+conda env create -n mgd -f environment.yml
+conda activate mgd
+```
+
+Alternatively, you can create a new conda environment and install the required packages manually:
+
+```sh
+conda create -n mgd -y python=3.9
+conda activate mgd
+pip install torch==1.12.1 torchmetrics==0.11.0 opencv-python==4.7.0.68 diffusers==0.12.0 transformers==4.25.1 accelerate==0.15.0 clean-fid==0.1.35 torchmetrics[image]==0.11.0
+```
+
 ## Inference
 
 To run the inference please use the following:
 
 ```
-python eval.py --dataset_path <path> --batch_size <int> --mixed_precision fp16 --output_dir <path> --save_name <string> --num_workers_test <int> --sketch_cond_rate 0.2 --dataset <dresscode|vitonhd> --start_cond_rate 0.0
+python src/eval.py --dataset_path <path> --batch_size <int> --mixed_precision fp16 --output_dir <path> --save_name <string> --num_workers_test <int> --sketch_cond_rate 0.2 --dataset <dresscode|vitonhd> --start_cond_rate 0.0 --test_order <paired|unpaired>
 ```
 
 - ```dataset_path``` is the path to the dataset (change accordingly to the dataset parameter)
@@ -53,10 +83,10 @@ python eval.py --dataset_path <path> --batch_size <int> --mixed_precision fp16 -
 
 Note that we provide few sample images to test MGD simply cloning this repo (*i.e.*, assets/data). To execute the code set 
 - Dress Code Multimodal dataset
-    - ```dataset_path``` to ```assets/data/dresscode```
+    - ```dataset_path``` to ```../assets/data/dresscode```
     - ```dataset``` to ```dresscode```
 - Viton-HD Multimodal dataset
-    - ```dataset_path``` to ```assets/data/vitonhd```
+    - ```dataset_path``` to ```../assets/data/vitonhd```
     - ```dataset``` to ```vitonhd```
 
 It is possible to run the inference on the whole Dress Code Multimodal or Viton-HD Multimodal dataset simply changing the ```dataset_path``` and ```dataset``` according with the downloaded and prepared datasets (see sections below).
@@ -68,6 +98,7 @@ The model and checkpoints are available via torch.hub.
 Load the MGD denoising UNet model using the following code:
 
 ```
+import torch
 unet = torch.hub.load(
     dataset=<dataset>, 
     repo_or_dir='aimagelab/multimodal-garment-designer', 
@@ -82,7 +113,7 @@ unet = torch.hub.load(
 Use the denoising network with our custom diffusers pipeline as follow:
 
 ```
-from pipes.sketch_posemap_inpaint_pipe import StableDiffusionSketchPosemapInpaintPipeline
+from src.mgd_pipelines.mgd_pipe import MGDPipe
 from diffusers import AutoencoderKL, DDIMScheduler
 from transformers import CLIPTextModel, CLIPTokenizer
 
@@ -109,7 +140,7 @@ val_scheduler = DDIMScheduler.from_pretrained(
     )
 val_scheduler.set_timesteps(50)
 
-val_pipe = ValPipe(
+mgd_pipe = MGDPipe(
     text_encoder=text_encoder,
     vae=vae,
     unet=unet,

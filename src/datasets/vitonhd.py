@@ -1,22 +1,27 @@
+# File havily based on https://github.com/aimagelab/dress-code/blob/main/data/dataset.py
+
+
+import json
+import os
+import pathlib
 import random
-import cv2
+import sys
+from typing import Tuple
+
+PROJECT_ROOT = pathlib.Path(__file__).absolute().parents[2].absolute()
+sys.path.insert(0, str(PROJECT_ROOT))
+
+import numpy as np
 import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from PIL import Image, ImageDraw, ImageOps
-import os
-import numpy as np
-import json
-from typing import List, Tuple
-# from utils.labelmap import label_map
-from numpy.linalg import lstsq
 from torchvision.ops import masks_to_boxes
-from utils.posemap import kpoint_to_heatmap
-from utils.posemap import get_coco_body25_mapping
-from utils.labelmap import label_map_vitonhd as labels
+from src.utils.posemap import get_coco_body25_mapping
+from src.utils.posemap import kpoint_to_heatmap
 
 
-class Dataset(torch.nn.Module):
+class VitonHDDataset(data.Dataset):
     def __init__(
             self,
             dataroot_path: str,
@@ -28,25 +33,11 @@ class Dataset(torch.nn.Module):
             order: str = 'paired',
             outputlist: Tuple[str] = ('c_name', 'im_name', 'image', 'im_cloth', 'shape', 'pose_map',
                                       'parse_array', 'im_mask', 'inpaint_mask', 'parse_mask_total',
-                                      'im_sketch', 'captions', 'captions_uncond', 'original_captions'),
-            category: Tuple[str] = ('dresses', 'upper_body', 'lower_body'),
-            size: Tuple[int, int] = (256, 192),
-            uncond_fraction: float = 0.0,
+                                      'im_sketch', 'captions', 'original_captions'),
+            size: Tuple[int, int] = (512, 384),
     ):
-        """
-        Initialize the PyTroch Dataset Class
-        :param dataroot_path: dataset root folder
-        :type dataroot_path:  string
-        :param phase: phase (train | test)
-        :type phase: string
-        :param order: setting (paired | unpaired)
-        :type order: string
-        :param category: clothing category (upper_body | lower_body | dresses)
-        :type category: list(str)
-        :param size: image size (height, width)
-        :type size: tuple(int)
-        """
-        super(Dataset, self).__init__()
+
+        super(VitonHDDataset, self).__init__()
         self.dataroot = dataroot_path
         self.phase = phase
         self.caption_folder = caption_folder
@@ -66,7 +57,7 @@ class Dataset(torch.nn.Module):
             transforms.Normalize((0.5,), (0.5,))
         ])
         self.order = order
-        self.uncond_fraction = uncond_fraction
+
         im_names = []
         c_names = []
         dataroot_names = []
@@ -74,7 +65,7 @@ class Dataset(torch.nn.Module):
         possible_outputs = ['c_name', 'im_name', 'image', 'im_cloth', 'shape', 'im_head', 'im_pose',
                             'pose_map', 'parse_array',
                             'im_mask', 'inpaint_mask', 'parse_mask_total', 'im_sketch', 'captions',
-                            'captions_uncond', 'original_captions', 'category']
+                            'original_captions', 'category']
 
         assert all(x in possible_outputs for x in outputlist)
 
@@ -83,8 +74,6 @@ class Dataset(torch.nn.Module):
             # self.captions_dict = json.load(f)['items']
             self.captions_dict = json.load(f)
         self.captions_dict = {k: v for k, v in self.captions_dict.items() if len(v) >= 3}
-
-        annotated_elements = [k for k, _ in self.captions_dict.items()]
 
         dataroot = self.dataroot
         if phase == 'train':
@@ -130,23 +119,11 @@ class Dataset(torch.nn.Module):
         sketch_threshold = random.randint(self.sketch_threshold_range[0], self.sketch_threshold_range[1])
 
         if "captions" in self.outputlist or "original_captions" in self.outputlist:
-
-            try:
-                captions = self.captions_dict[c_name.split('_')[0]]
-            except:
-                captions = ['']
-            try:
-                # take a random caption if there are multiple
-                if self.phase == 'train':
-                    random.shuffle(captions)
-                captions = ", ".join(captions)
-            except:
-                raise ValueError(
-                    f"Captions should contain list of strings"
-                )
-
-            if self.uncond_fraction > 0:
-                captions = "" if random.random() < self.uncond_fraction else captions
+            captions = self.captions_dict[c_name.split('_')[0]]
+            # take a random caption if there are multiple
+            if self.phase == 'train':
+                random.shuffle(captions)
+            captions = ", ".join(captions)
 
             original_captions = captions
 
@@ -190,7 +167,6 @@ class Dataset(torch.nn.Module):
             im_sketch = transforms.functional.to_tensor(im_sketch)  # [-1,1]
             im_sketch = 1 - im_sketch
 
-        
         if "im_pose" in self.outputlist or "parser_mask" in self.outputlist or "im_mask" in self.outputlist or "parse_mask_total" in self.outputlist or "parse_array" in self.outputlist or "pose_map" in self.outputlist or "parse_array" in self.outputlist or "shape" in self.outputlist or "im_head" in self.outputlist:
             # Label Map
             # parse_name = im_name.replace('_0.jpg', '_4.png')
@@ -385,12 +361,6 @@ class Dataset(torch.nn.Module):
             parse_mask_total = parse_array * parse_mask_total
             parse_mask_total = torch.from_numpy(parse_mask_total)
 
-        if "pose_map" in self.outputlist and torch.rand(1) < self.uncond_fraction:
-            pose_map = torch.zeros_like(pose_map)
-
-        if "im_sketch" in self.outputlist and torch.rand(1) < self.uncond_fraction:
-            im_sketch = torch.zeros_like(im_sketch)
-
         result = {}
         for k in self.outputlist:
             result[k] = vars()[k]
@@ -408,7 +378,7 @@ class Dataset(torch.nn.Module):
         # "cloth_sketch" -> sketch of the inshop cloth
         # "im_sketch" -> sketch of "im_cloth"
         # inpaint_mask -> bb of the model img where the cloth is
-
+        # ...
         return result
 
     def __len__(self):

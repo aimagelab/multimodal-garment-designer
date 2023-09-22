@@ -17,7 +17,7 @@ from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
 from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_inpaint import prepare_mask_and_masked_image
 
 
-class StableDiffusionSketchPosemapInpaintPipeline(DiffusionPipeline):
+class MGDPipe(DiffusionPipeline):
     r"""
     Pipeline for text and posemap -guided image inpainting using Stable Diffusion.
 

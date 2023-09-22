@@ -4,15 +4,14 @@ import torch
 
 import torchvision.transforms as T
 from diffusers.pipeline_utils import DiffusionPipeline
-from argparse import ArgumentParser
 from torch.utils.data import DataLoader
-from utils.image_composition import compose_img, compose_img_dresscode
-from PIL import Image
+from src.utils.image_composition import compose_img, compose_img_dresscode
 
-@torch.inference_mode()  
-def generate_images_from_inpaint_sketch_posemap_pipe(
+
+@torch.inference_mode()
+def generate_images_from_mgd_pipe(
     test_order: bool,
-    pipe: DiffusionPipeline, 
+    pipe: DiffusionPipeline,
     test_dataloader: DataLoader,
     save_name: str,
     dataset: str,
@@ -109,7 +108,7 @@ def generate_images_from_inpaint_sketch_posemap_pipe(
                 model_i = model_img[i] * 0.5 + 0.5
                 if dataset == "vitonhd":
                     final_img = compose_img(model_i, generated_images[i], batch['im_parse'][i])
-                else:
+                else: # dataset == Dresscode
                     face = batch["stitch_label"][i].to(model_img.device)
                     face = T.functional.resize(face, 
                                                size=(512,384), 

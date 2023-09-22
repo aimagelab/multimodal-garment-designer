@@ -1,8 +1,6 @@
-import json
 import os
 
 #  external libraries
-import accelerate
 import torch
 import torch.utils.checkpoint
 import torch.utils.checkpoint
@@ -14,13 +12,13 @@ from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer
 
 # custom imports
-from datasets.dresscode import Dataset as Dataset
-from datasets.vitonhd import Dataset as Dataset_viton
-from pipes.sketch_posemap_inpaint_pipe import StableDiffusionSketchPosemapInpaintPipeline as ValPipe
-from pipes.sketch_posemap_inpaint_pipe_disentangled import StableDiffusionSketchPosemapInpaintPipeline as ValPipeDisentangled
-from utils.image_from_pipe import generate_images_from_inpaint_sketch_posemap_pipe
+from datasets.dresscode import DressCodeDataset
+from datasets.vitonhd import VitonHDDataset
+from mgd_pipelines.mgd_pipe import MGDPipe
+from mgd_pipelines.mgd_pipe_disentangled import MGDPipeDisentangled
+from utils.arg_parser import eval_parse_args
+from utils.image_from_pipe import generate_images_from_mgd_pipe
 from utils.set_seeds import set_seed
-from utils.arg_parser import parse_args
 
 # Will error if the minimal version of diffusers is not installed. Remove at your own risks.
 check_min_version("0.10.0.dev0")
@@ -31,7 +29,7 @@ os.environ["WANDB_START_METHOD"] = "thread"
 
 
 def main() -> None:
-    args = parse_args()
+    args = eval_parse_args()
     accelerator = Accelerator(
         mixed_precision=args.mixed_precision,
     )
@@ -52,8 +50,9 @@ def main() -> None:
         args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision
     )
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision)
-    
-    unet = torch.hub.load(dataset=args.dataset, repo_or_dir='aimagelab/multimodal-garment-designer', source='github', model='mgd', pretrained=True)
+
+    unet = torch.hub.load(dataset=args.dataset, repo_or_dir='aimagelab/multimodal-garment-designer', source='github',
+                          model='mgd', pretrained=True)
 
     # Freeze vae and text_encoder
     vae.requires_grad_(False)
@@ -72,7 +71,7 @@ def main() -> None:
         category = ['dresses', 'upper_body', 'lower_body']
 
     if args.dataset == "dresscode":
-        test_dataset = Dataset(
+        test_dataset = DressCodeDataset(
             dataroot_path=args.dataset_path,
             phase='test',
             order=args.test_order,
@@ -83,14 +82,13 @@ def main() -> None:
             size=(512, 384)
         )
     elif args.dataset == "vitonhd":
-        test_dataset = Dataset_viton(
+        test_dataset = VitonHDDataset(
             dataroot_path=args.dataset_path,
             phase='test',
             order=args.test_order,
             sketch_threshold_range=(20, 20),
             radius=5,
             tokenizer=tokenizer,
-            category=['upper_body'],
             size=(512, 384),
         )
     else:
@@ -117,7 +115,7 @@ def main() -> None:
     # Select fast classifier free guidance or disentagle classifier free guidance according to the disentagle parameter in args
     with torch.inference_mode():
         if args.disentagle:
-            val_pipe = ValPipeDisentangled(
+            val_pipe = MGDPipeDisentangled(
                 text_encoder=text_encoder,
                 vae=vae,
                 unet=unet.to(vae.dtype),
@@ -125,7 +123,7 @@ def main() -> None:
                 scheduler=val_scheduler,
             ).to(device)
         else:
-            val_pipe = ValPipe(
+            val_pipe = MGDPipe(
                 text_encoder=text_encoder,
                 vae=vae,
                 unet=unet.to(vae.dtype),
@@ -135,22 +133,22 @@ def main() -> None:
 
         val_pipe.enable_attention_slicing()
         test_dataloader = accelerator.prepare(test_dataloader)
-        generate_images_from_inpaint_sketch_posemap_pipe(
-            test_order = args.test_order,
-            pipe = val_pipe, 
-            test_dataloader = test_dataloader,
-            save_name = args.save_name,
-            dataset = args.dataset,
-            output_dir = args.output_dir,
-            guidance_scale = args.guidance_scale,
-            guidance_scale_pose = args.guidance_scale_pose,
-            guidance_scale_sketch = args.guidance_scale_sketch,
-            sketch_cond_rate = args.sketch_cond_rate,
-            start_cond_rate = args.start_cond_rate,
-            no_pose = False,
-            disentagle = False,
-            seed = args.seed,
-            )
+        generate_images_from_mgd_pipe(
+            test_order=args.test_order,
+            pipe=val_pipe,
+            test_dataloader=test_dataloader,
+            save_name=args.save_name,
+            dataset=args.dataset,
+            output_dir=args.output_dir,
+            guidance_scale=args.guidance_scale,
+            guidance_scale_pose=args.guidance_scale_pose,
+            guidance_scale_sketch=args.guidance_scale_sketch,
+            sketch_cond_rate=args.sketch_cond_rate,
+            start_cond_rate=args.start_cond_rate,
+            no_pose=False,
+            disentagle=False,
+            seed=args.seed,
+        )
 
 
 if __name__ == "__main__":

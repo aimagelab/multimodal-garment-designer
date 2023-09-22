@@ -1,22 +1,26 @@
-import os
-import random
-from typing import List, Tuple
-import pathlib
+# File havily based on https://github.com/aimagelab/dress-code/blob/main/data/dataset.py
 
 import json
-import numpy as np
+import pathlib
+import random
+import sys
+from typing import Tuple
+
+PROJECT_ROOT = pathlib.Path(__file__).absolute().parents[2].absolute()
+sys.path.insert(0, str(PROJECT_ROOT))
+
 import cv2
+import numpy as np
 import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
-from torchvision.ops import masks_to_boxes
 from PIL import Image, ImageDraw, ImageOps
+from torchvision.ops import masks_to_boxes
+from src.utils.labelmap import label_map
+from src.utils.posemap import kpoint_to_heatmap
 
-from utils.labelmap import label_map
-from utils.posemap import kpoint_to_heatmap
 
-
-class Dataset(data.Dataset):
+class DressCodeDataset(data.Dataset):
     def __init__(self,
                  dataroot_path: str,
                  phase: str,
@@ -28,30 +32,13 @@ class Dataset(data.Dataset):
                  order: str = 'paired',
                  outputlist: Tuple[str] = ('c_name', 'im_name', 'image', 'im_cloth', 'shape', 'pose_map',
                                            'parse_array', 'im_mask', 'inpaint_mask', 'parse_mask_total',
-                                           'im_sketch', 'captions', 'captions_uncond',
+                                           'im_sketch', 'captions',
                                            'original_captions', 'category', 'stitch_label'),
                  category: Tuple[str] = ('dresses', 'upper_body', 'lower_body'),
-                 size: Tuple[int, int] = (256, 192),
-                 uncond_fraction: float = 0.0,
-                 use_coarse_captions: bool = False,
-                 generated_images_path: str = None,
-                 balance_category: bool = False,
-                 num_elements: int = None
+                 size: Tuple[int, int] = (512, 384),
                  ):
-        """
-        Initialize the PyTroch Dataset Class
-        :param dataroot_path: dataset root folder
-        :type dataroot_path:  string
-        :param phase: phase (train | test)
-        :type phase: string
-        :param order: setting (paired | unpaired)
-        :type order: string
-        :param category: clothing category (upper_body | lower_body | dresses)
-        :type category: list(str)
-        :param size: image size (height, width)
-        :type size: tuple(int)
-        """
-        super(Dataset, self).__init__()
+
+        super(DressCodeDataset, self).__init__()
         self.dataroot = pathlib.Path(dataroot_path)
         self.phase = phase
         self.caption_folder = caption_folder
@@ -71,11 +58,6 @@ class Dataset(data.Dataset):
             transforms.Normalize((0.5,), (0.5,))
         ])
         self.order = order
-        self.uncond_fraction = uncond_fraction
-        self.use_coarse_captions = use_coarse_captions
-        self.generated_images_path = generated_images_path
-        self.balance_category = balance_category
-        self.num_elements = num_elements
 
         im_names = []
         c_names = []
@@ -84,7 +66,7 @@ class Dataset(data.Dataset):
         possible_outputs = ['c_name', 'im_name', 'cloth', 'image', 'im_cloth', 'shape', 'im_head', 'im_pose',
                             'pose_map', 'parse_array', 'dense_labels', 'dense_uv', 'skeleton',
                             'im_mask', 'inpaint_mask', 'parse_mask_total', 'cloth_sketch', 'im_sketch', 'captions',
-                            'captions_uncond', 'original_captions', 'category', 'hands', 'parse_head_2', 'stitch_label']
+                            'original_captions', 'category', 'hands', 'parse_head_2', 'stitch_label']
 
         assert all(x in possible_outputs for x in outputlist)
 
@@ -92,11 +74,9 @@ class Dataset(data.Dataset):
         with open(self.dataroot / self.caption_folder) as f:
             self.captions_dict = json.load(f)
         self.captions_dict = {k: v for k, v in self.captions_dict.items() if len(v) >= 3}
-        if use_coarse_captions:
-            with open(self.dataroot / coarse_caption_folder) as f:
-                self.captions_dict.update(json.load(f))
 
-        annotated_elements = [k for k, _ in self.captions_dict.items()]
+        with open(self.dataroot / coarse_caption_folder) as f:
+            self.captions_dict.update(json.load(f))
 
         for c in category:
             assert c in ['dresses', 'upper_body', 'lower_body']
@@ -130,13 +110,6 @@ class Dataset(data.Dataset):
         :rtype: dict
         """
 
-        if self.balance_category:
-            assert self.phase == 'train' and self.order == 'paired'
-            current_category = random.choice(self.category)
-            chosen_droot = random.choice(
-                [droot for droot in self.dataroot_names if str(droot.name) == current_category])
-            index = self.dataroot_names.index(chosen_droot)
-
         c_name = self.c_names[index]
         im_name = self.im_names[index]
         dataroot = self.dataroot_names[index]
@@ -150,12 +123,8 @@ class Dataset(data.Dataset):
                 random.shuffle(captions)
             captions = ", ".join(captions)
 
-            # randomly drop captions according to uncond_fraction
-            if self.uncond_fraction > 0:
-                captions = "" if random.random() < self.uncond_fraction else captions
-
             original_captions = captions
-        
+
         if "captions" in self.outputlist:
             cond_input = self.tokenizer([captions], max_length=self.tokenizer.model_max_length, padding="max_length",
                                         truncation=True, return_tensors="pt").input_ids
@@ -165,7 +134,6 @@ class Dataset(data.Dataset):
                 [""], padding="max_length", max_length=max_length, return_tensors="pt"
             ).input_ids.squeeze(0)
             captions = cond_input
-            captions_uncond = uncond_input
 
         if "image" in self.outputlist or "im_head" in self.outputlist or "im_cloth" in self.outputlist:
             image = Image.open(dataroot / 'images' / im_name)
@@ -176,7 +144,8 @@ class Dataset(data.Dataset):
         if "im_sketch" in self.outputlist:
 
             if "unpaired" == self.order and self.phase == 'test':  # Upper of multigarment is the same of unpaired
-                im_sketch = Image.open(dataroot / 'im_sketch_unpaired' / f'{im_name.replace(".jpg", "")}_{c_name.replace(".jpg", ".png")}')
+                im_sketch = Image.open(
+                    dataroot / 'im_sketch_unpaired' / f'{im_name.replace(".jpg", "")}_{c_name.replace(".jpg", ".png")}')
             else:
                 im_sketch = Image.open(dataroot / 'im_sketch' / c_name.replace(".jpg", ".png"))
 
@@ -398,18 +367,11 @@ class Dataset(data.Dataset):
             parse_mask_total = parse_array * parse_mask_total
             parse_mask_total = torch.from_numpy(parse_mask_total)
 
-        # randomlly drop inputs according to uncond_fraction
-        if "pose_map" in self.outputlist and random.random() < self.uncond_fraction:
-            pose_map = torch.zeros_like(pose_map)
-
-        if "im_sketch" in self.outputlist and random.random() < self.uncond_fraction:
-            im_sketch = torch.zeros_like(im_sketch)
-
         if "stitch_label" in self.outputlist:
             stitch_labelmap = Image.open(self.dataroot / 'test_stitchmap' / im_name.replace(".jpg", ".png"))
             stitch_labelmap = transforms.ToTensor()(stitch_labelmap) * 255
             stitch_label = stitch_labelmap == 13
-        
+
         result = {}
         for k in self.outputlist:
             result[k] = vars()[k]
@@ -423,11 +385,8 @@ class Dataset(data.Dataset):
         # "im_mask" -> black mask of the cloth in the model img
         # "cloth_sketch" -> sketch of the inshop cloth
         # "im_sketch" -> sketch of "im_cloth"
-
+        # ...
         return result
 
     def __len__(self):
-        if self.num_elements == None:
-            return len(self.c_names)
-        else:
-            return len(self.c_names[:self.num_elements])
+        return len(self.c_names)

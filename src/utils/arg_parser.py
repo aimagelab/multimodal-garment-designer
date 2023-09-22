@@ -2,7 +2,7 @@ import os
 import argparse
 
 
-def parse_args() -> argparse.Namespace:
+def eval_parse_args() -> argparse.Namespace:
     """ This function parses the arguments passed to the script.
 
     Returns:
@@ -24,16 +24,6 @@ def parse_args() -> argparse.Namespace:
         default=None,
         required=False,
         help="Revision of pretrained model identifier from huggingface.co/models.",
-    )
-    parser.add_argument(
-        "--non_ema_revision",
-        type=str,
-        default=None,
-        required=False,
-        help=(
-            "Revision of pretrained non-ema model identifier. Must be a branch, tag or git identifier of the local or"
-            " remote repository specified with --pretrained_model_name_or_path."
-        ),
     )
 
     #  destination folder
@@ -65,17 +55,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset_path",
         type=str,
-        default="",
-        help="The name of the repository to keep in sync with the local `output_dir`.",
+        required=True,
+        help="Path to the dataset",
     )
-    parser.add_argument("--category", type=str, default="")
-    parser.add_argument("--test_order", type=str, default="unpaired", choices=["unpaired", "paired"])
+    parser.add_argument("--category", type=str, default="", help="category to use")
+    parser.add_argument("--test_order", type=str, required=True, choices=["unpaired", "paired"],
+                        help="Test order, should be either paired or unpaired")
 
     # dataloader parameters
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size (per device) for the test dataloader.")
     parser.add_argument("--num_workers_test", type=int, default=8,
-                        help="The name of the repository to keep in sync with the local `output_dir`.",
-                        )
+                        help="Number of workers for the test dataloader.")
+
     
     #  input parameters
     parser.add_argument("--mask_type", type=str, default="bounding_box", choices=["keypoints", "bounding_box"])
@@ -96,7 +87,7 @@ def parse_args() -> argparse.Namespace:
 
     # miscelaneous parameters
     parser.add_argument("--seed", type=int, default=1234, help="A seed for reproducible training.")
-    parser.add_argument("--save_name", type=str, default="")
+    parser.add_argument("--save_name", type=str, required=True, help="Folder name of the saved images")
 
     args = parser.parse_args()
 
@@ -104,9 +95,5 @@ def parse_args() -> argparse.Namespace:
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
     if env_local_rank != -1 and env_local_rank != args.local_rank:
         args.local_rank = env_local_rank
-
-    # default to using the same revision for the non-ema model if not specified
-    if args.non_ema_revision is None:
-        args.non_ema_revision = args.revision
 
     return args
