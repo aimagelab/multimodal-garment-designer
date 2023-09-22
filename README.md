@@ -81,7 +81,7 @@ python src/eval.py --dataset_path <path> --batch_size <int> --mixed_precision fp
 - ```sketch_cond_rate``` rate {0.0,1.0} of denoising steps in which sketch cond is applied
 - ```test_order``` test setting (paired | unpaired)
 
-Note that we provide few sample images to test MGD simply cloning this repo (*i.e.*, assets/data). To execute the code set 
+Note that we provide a few sample images to test MGD simply by cloning this repo (*i.e.*, assets/data). To execute the code set 
 - Dress Code Multimodal dataset
     - ```dataset_path``` to ```../assets/data/dresscode```
     - ```dataset``` to ```dresscode```
@@ -161,11 +161,11 @@ Start by downloading the original datasets from the following links:
 
 Download the Dress Code Multimodal and Viton-HD Multimodal additional data annotations from here.
 
-- Dress Code Multimodal **[[link](https://drive.google.com/file/d/1y0lHA-4ogjjo9g7VuvcQJrD_CtgjAKhv/view?usp=drive_link)]**
-- Viton-HD Multimodal **[[link](https://drive.google.com/file/d/1Z2b9YkyBPA_9ZDC54Y5muW9Q8yfAqWSH/view?usp=share_link)]**
+- Dress Code Multimodal **[[link](https://drive.google.com/file/d/1dwnAi1CNmmF_YdbIDfm8078dGh4ci47L/view?usp=sharing)]**
+- Viton-HD Multimodal **[[link](https://drive.google.com/file/d/1Z2b9YkyBPA_9ZDC54Y5muW9Q8yfAqWSH/view?usp=sharing)]**
 
 ### Dress Code Multimodal Data Preparation
-Once data is downloaded prepare the dataset folder as follow:
+Once data is downloaded prepare the dataset folder as follows:
 
 <pre>
 Dress Code
@@ -186,7 +186,7 @@ Dress Code
 </pre>
 
 ### Viton-HD Multimodal Data Preparation
-Once data is downloaded prepare the dataset folder as follow:
+Once data is downloaded prepare the dataset folder as follows:
 
 <pre>
 Viton-HD
