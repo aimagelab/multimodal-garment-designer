@@ -14,6 +14,8 @@
 
 This is the **official repository** for the [**paper**](https://arxiv.org/abs/2304.02051) "*Multimodal Garment Designer: Human-Centric Latent Diffusion Models for Fashion Image Editing*".
 
+🔥🔥 **[21/03/2024] If you are interested in multimodal fashion image editing take a look at our most recent work [Multimodal-Conditioned Latent Diffusion Models for Fashion Image Editing](https://arxiv.org/abs/2403.14828). We introduce Ti-MGD a novel approach that also integrates fabric texture conditioning [![Repo](https://badgen.net/badge/icon/GitHub?icon=github&label)](https://github.com/aimagelab/Ti-MGD)**
+
 ## Overview
 
 <p align="center">
