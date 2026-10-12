@@ -166,6 +166,10 @@ Download the Dress Code Multimodal and Viton-HD Multimodal additional data annot
 - Dress Code Multimodal **[[link](https://drive.google.com/file/d/1dwnAi1CNmmF_YdbIDfm8078dGh4ci47L/view?usp=sharing)]**
 - Viton-HD Multimodal **[[link](https://drive.google.com/file/d/1Z2b9YkyBPA_9ZDC54Y5muW9Q8yfAqWSH/view?usp=sharing)]**
 
+Alternatively, download the additional annotations for **both datasets** from the [GitHub release](https://github.com/aimagelab/multimodal-garment-designer/releases/tag/weights).
+Follow the release notes to reconstruct and extract the split archive, then prepare the datasets as described below.
+
+
 ### Dress Code Multimodal Data Preparation
 Once data is downloaded prepare the dataset folder as follows:
 
